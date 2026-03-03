@@ -4,5 +4,7 @@
 Project Contributors
 
 S ->
-V ->
+
+V -> Vihaan Pendyala
+
 R -> 
