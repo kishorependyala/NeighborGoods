@@ -1,2 +1,2 @@
 # NeighborGoods
-An app to share books, toys, etc
+ An app to share books, toys, etc
