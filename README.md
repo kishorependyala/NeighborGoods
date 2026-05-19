@@ -1,25 +1,43 @@
 # NeighborGoods
- An app to share books, toys, etc
 
-Goal, within communities, we would want kids to barter trade their used books, toys, board games, bikes etc.
+NeighborGoods is a full-stack barter trading app for neighborhood communities. Families can join invite-only groups, list books, toys, games, and bikes, express interest, and discover 2-way, 3-way, or 4-way trade cycles.
 
-Look up skills for building the app.
+## Stack
+- Frontend: React + TypeScript (CRA)
+- Backend: FastAPI
+- Storage: JSON flat-file per entity
+- Auth: phone number + 4-digit PIN
+- Theme: amber / warm inline-style system
+- Deploy: Azure Static Web Apps + Azure App Service
 
-As soon as user logs in  - they hsould see communities they are part of. Also should have option to join a community.
+## Local setup
+### Backend
+```bash
+cd backend
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
+cp .env.example .env
+```
 
-Once inside community, thye hsould see all the sections available for barter trade.
-or option to add their items. 
+### Frontend
+```bash
+cd frontend
+npm install --legacy-peer-deps
+```
 
-Do a google intergration to search for an item and link in the section for each item.
+### Run both
+```bash
+./start.sh
+```
 
-To make it easy to exchange, tentative dollar cost as digital tokens. You can pick provide your interest on what you need.
+Frontend: http://localhost:3030  
+Backend: http://localhost:8080
 
-The way the trade works, three way or four way as well  if direct swap is not going to make the barter happen.
-
-Project Drivers
-
-S -> Siddarth Akula
-
-V -> Vihaan Pendyala
-
-R -> Riskhik Polusani
+## Key features
+- Multi-step signup/login with phone + PIN
+- Community create/join flows with invite codes
+- Item listing, status updates, and interest tracking
+- Google Books search with mock fallback in dev
+- Trade-cycle discovery for 2-way, 3-way, and 4-way swaps
+- Super admin tools for users, communities, data browser, and config
+- GitHub Actions workflows for Azure deployment
