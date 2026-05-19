@@ -56,34 +56,34 @@ NeighborGoods/
 
 ## Features & Progress
 
-### Phase 1 – Scaffold
+### Phase 1 – Scaffold ✅
 - [x] Monorepo setup (start/stop/restart scripts)
-- [ ] React + FastAPI + JSON stack
-- [ ] Python venv + requirements.txt
+- [x] React + FastAPI + JSON stack
+- [x] Python venv + requirements.txt
 
-### Phase 2 – Auth & Data Layer
-- [ ] Phone + PIN auth (login / signup → 100 token welcome bonus)
-- [ ] JSON flat-file storage helpers
-- [ ] Azure persistent storage config
+### Phase 2 – Auth & Data Layer ✅
+- [x] Phone + PIN auth (login / signup → 100 token welcome bonus)
+- [x] JSON flat-file storage helpers
+- [x] Azure persistent storage config
 
-### Phase 3 – UI Shell
-- [ ] Amber/warm theme (`theme.ts`)
-- [ ] Sticky header + tab bar shell
-- [ ] Mobile-friendly item lists (tap + arrow-key sorting)
-- [ ] Share links via hash routing (`#community=ID`)
+### Phase 3 – UI Shell ✅
+- [x] Amber/warm theme (`theme.ts`)
+- [x] Sticky header + tab bar shell
+- [x] Mobile-friendly item lists (tap + arrow-key sorting)
+- [x] Share links via hash routing (`#community=ID`)
 
-### Phase 4 – Core Features
-- [ ] Communities: create, join (via 6-char invite code), browse
-- [ ] Items: add by category (books 📚 toys 🧸 games 🎲 bikes 🚲 other 📦)
-- [ ] Google Books search when adding book items
-- [ ] Digital tokens: item values, user balance display
-- [ ] Interest / Wishlist: "I Want This!" per item
-- [ ] Trade matching: 2-way / 3-way / 4-way cycle detection algorithm
+### Phase 4 – Core Features ✅
+- [x] Communities: create, join (via 6-char invite code), browse
+- [x] Items: add by category (books 📚 toys 🧸 games 🎲 bikes 🚲 other 📦)
+- [x] Google Books search when adding book items
+- [x] Digital tokens: item values, user balance display
+- [x] Interest / Wishlist: "I Want This!" per item
+- [x] Trade matching: 2-way / 3-way / 4-way cycle detection algorithm
 
-### Phase 5 – Admin & Deploy
-- [ ] Super admin panel (communities, users, data browser, config)
-- [ ] Azure SWA + App Service deployment config
-- [ ] GitHub Actions CI/CD (backend + frontend separate workflows)
+### Phase 5 – Admin & Deploy ✅
+- [x] Super admin panel (communities, users, data browser, config)
+- [x] Azure SWA + App Service deployment config
+- [x] GitHub Actions CI/CD (backend + frontend separate workflows)
 
 ## Key Design Decisions
 - **Auth**: Stateless phone+PIN (no JWT/sessions)
