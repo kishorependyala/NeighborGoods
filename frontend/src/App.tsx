@@ -163,6 +163,22 @@ export default function App() {
           />
         )}
       </main>
+
+      <footer style={{
+        marginTop: '2rem',
+        borderTop: '1px solid #fed7aa',
+        padding: '1.25rem 1rem',
+        textAlign: 'center',
+        display: 'grid',
+        gap: '0.3rem',
+      }}>
+        <div style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: 600 }}>
+          Designed by Vihaan, Sid &amp; Rishik
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+          © {new Date().getFullYear()} Tea Break Tech · All rights reserved
+        </div>
+      </footer>
     </div>
   );
 }

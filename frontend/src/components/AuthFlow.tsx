@@ -230,6 +230,15 @@ export default function AuthFlow({ onAuth }: Props) {
           </>
         )}
       </div>
+
+      <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'grid', gap: '0.25rem' }}>
+        <div style={{ fontSize: '0.78rem', color: '#92400e', fontWeight: 600 }}>
+          Designed by Vihaan, Sid &amp; Rishik
+        </div>
+        <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>
+          © {new Date().getFullYear()} Tea Break Tech · All rights reserved
+        </div>
+      </div>
     </div>
   );
 }
