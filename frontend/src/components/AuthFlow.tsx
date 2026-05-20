@@ -232,10 +232,9 @@ export default function AuthFlow({ onAuth }: Props) {
             </button>
           </>
         )}
-      </div>
-
-      <div style={{ textAlign: 'center', marginTop: '0.25rem', fontSize: '0.72rem', color: '#9ca3af' }}>
-        © {new Date().getFullYear()} Tea Break Tech · All rights reserved
+        <div style={{ textAlign: 'center', fontSize: '0.72rem', color: '#9ca3af', paddingTop: '0.25rem' }}>
+          © {new Date().getFullYear()} Tea Break Tech · All rights reserved
+        </div>
       </div>
     </div>
   );
