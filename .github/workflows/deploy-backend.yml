@@ -1,0 +1,49 @@
+name: Deploy Backend
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/deploy-backend.yml']
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Zip backend
+        run: |
+          cd backend
+          zip -r ../backend-deploy.zip . \
+            -x "venv/*" \
+            -x "__pycache__/*" \
+            -x "*.pyc" \
+            -x ".env"
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: neighborgoods-backend
+          package: backend-deploy.zip
+          startup-command: >
+            gunicorn --bind=0.0.0.0:8000 --timeout 120 --workers 1
+            -k uvicorn.workers.UvicornWorker app.main:app
+
+      - name: Warm up backend
+        run: sleep 30 && curl -sf https://neighborgoods-backend.azurewebsites.net/api/health || true
