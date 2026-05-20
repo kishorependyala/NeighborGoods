@@ -129,6 +129,9 @@ export default function AuthFlow({ onAuth }: Props) {
           <div style={{ fontSize: '3rem' }}>🏘️</div>
           <h1 style={{ ...sectionTitle, fontSize: '1.8rem' }}>NeighborGoods</h1>
           <p style={{ ...mutedText, fontSize: '0.95rem' }}>Barter books, toys, games, and bikes with your community.</p>
+          <p style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 600, margin: 0 }}>
+            Designed by Vihaan, Sid &amp; Rishik
+          </p>
         </div>
 
         {error && <div style={S.errorBox}>{error}</div>}
@@ -231,13 +234,8 @@ export default function AuthFlow({ onAuth }: Props) {
         )}
       </div>
 
-      <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'grid', gap: '0.25rem' }}>
-        <div style={{ fontSize: '0.78rem', color: '#92400e', fontWeight: 600 }}>
-          Designed by Vihaan, Sid &amp; Rishik
-        </div>
-        <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>
-          © {new Date().getFullYear()} Tea Break Tech · All rights reserved
-        </div>
+      <div style={{ textAlign: 'center', marginTop: '0.25rem', fontSize: '0.72rem', color: '#9ca3af' }}>
+        © {new Date().getFullYear()} Tea Break Tech · All rights reserved
       </div>
     </div>
   );
