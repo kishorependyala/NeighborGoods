@@ -20,6 +20,7 @@ export default function CommunitiesTab({ user, selectedCommunity, onSelectCommun
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -74,6 +75,26 @@ export default function CommunitiesTab({ user, selectedCommunity, onSelectCommun
       await load();
     } catch (err: any) {
       setError(err.message || 'Unable to join community');
+    }
+  };
+
+  const handleJoinById = async (community: Community) => {
+    setError('');
+    setSuccess('');
+    setJoiningId(community.id);
+    try {
+      const res = await joinCommunity(user.phone, community.inviteCode);
+      if (!res.success || !res.community) {
+        setError(res.message || 'Unable to join community');
+        return;
+      }
+      syncUser(res.user, res.community);
+      setSuccess(`Joined ${res.community.name}.`);
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Unable to join community');
+    } finally {
+      setJoiningId(null);
     }
   };
 
@@ -175,15 +196,28 @@ export default function CommunitiesTab({ user, selectedCommunity, onSelectCommun
       <div style={S.card}>
         <h3 style={subheading}>Browse All Communities</h3>
         <div style={{ display: 'grid', gap: '0.75rem', marginTop: '0.85rem' }}>
-          {allCommunities.length ? allCommunities.map(community => (
-            <div key={community.id} style={{ border: '1px solid #fed7aa', borderRadius: '0.8rem', padding: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <strong style={{ color: '#78350f' }}>{community.name}</strong>
-                <span style={mutedText}>👥 {community.memberIds.length}</span>
+          {allCommunities.length ? allCommunities.map(community => {
+            const isMember = user.communityIds.includes(community.id);
+            const isJoining = joiningId === community.id;
+            return (
+              <div key={community.id} style={{ border: '1px solid #fed7aa', borderRadius: '0.8rem', padding: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <strong style={{ color: '#78350f' }}>{community.name}</strong>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={mutedText}>👥 {community.memberIds.length}</span>
+                    {isMember ? (
+                      <button onClick={() => onSelectCommunity(community)} style={S.smallOutlineBtn}>✓ Joined</button>
+                    ) : (
+                      <button onClick={() => handleJoinById(community)} disabled={isJoining} style={S.smallBtn}>
+                        {isJoining ? '…' : 'Join'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p style={{ ...mutedText, marginTop: '0.35rem' }}>{community.description || 'No description yet.'}</p>
               </div>
-              <p style={{ ...mutedText, marginTop: '0.35rem' }}>{community.description || 'No description yet.'}</p>
-            </div>
-          )) : <div style={mutedText}>No communities created yet.</div>}
+            );
+          }) : <div style={mutedText}>No communities created yet.</div>}
         </div>
       </div>
     </div>
