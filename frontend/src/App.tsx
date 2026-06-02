@@ -168,6 +168,7 @@ export default function App() {
         {tabId === 'communities' && (
           <CommunitiesTab
             user={user}
+            isAdmin={!!user.isSuperAdmin}
             selectedCommunity={selectedCommunity}
             onSelectCommunity={community => {
               setSelectedCommunity(community);

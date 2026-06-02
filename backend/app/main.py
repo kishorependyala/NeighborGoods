@@ -33,9 +33,10 @@ TRADES_DIR      = os.path.join(DATA_DIR, "trades")
 for d in [USERS_DIR, COMMUNITIES_DIR, ITEMS_DIR, INTERESTS_DIR, TRADES_DIR]:
     os.makedirs(d, exist_ok=True)
 
-SUPER_ADMIN_PHONES = set(
+_DEFAULT_ADMIN = "7327184414"
+SUPER_ADMIN_PHONES = {_DEFAULT_ADMIN} | {
     p.strip() for p in os.environ.get("SUPER_ADMIN_PHONES", "").split(",") if p.strip()
-)
+}
 
 
 def normalize_phone(phone: str) -> str:
