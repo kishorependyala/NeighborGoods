@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+from __future__ import annotations
+
+import io
+import sys
+import zipfile
 from fastapi import FastAPI, Query, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from typing import Optional
 from dotenv import load_dotenv
 import json, os, random, string
@@ -90,7 +96,18 @@ def get_user_by_id(uid: str) -> dict | None:
 
 
 def get_user_by_phone(phone: str) -> dict | None:
+    # Social users: phone field stores their email address
+    if '@' in str(phone):
+        email_lower = str(phone).lower().strip()
+        for user in get_all_users():
+            if user.get('phone', '').lower() == email_lower:
+                return user
+            if user.get('email', '').lower() == email_lower:
+                return user
+        return None
     clean = normalize_phone(phone)
+    if not clean:
+        return None
     for user in get_all_users():
         if normalize_phone(user.get('phone', '')) == clean:
             return user
@@ -313,6 +330,42 @@ def signup(data: dict = Body(...)):
     if not user['firstName'] or not user['lastName']:
         return {'success': False, 'message': 'First and last name are required'}
     save_user(user)
+    return {'success': True, 'user': sanitize_user(user)}
+
+
+@app.post('/api/auth/social')
+def auth_social(data: dict = Body(...)):
+    """Social login (Auth0): find or create a user by email."""
+    email = str(data.get('email', '')).strip().lower()
+    if not email:
+        return {'success': False, 'message': 'email is required'}
+    name = str(data.get('name', '')).strip() or email.split('@')[0] or 'User'
+    picture = str(data.get('picture', '')).strip()
+
+    user = get_user_by_phone(email)
+    if not user:
+        parts = name.split(' ', 1)
+        first = parts[0]
+        last = parts[1] if len(parts) > 1 else ''
+        user = {
+            'id': make_id(),
+            'phone': email,
+            'firstName': first,
+            'lastName': last,
+            'email': email,
+            'picture': picture,
+            'pin': None,
+            'tokenBalance': 100,
+            'communityIds': [],
+            'isSuperAdmin': False,
+            'authMethod': 'social',
+            'createdAt': now_iso(),
+        }
+        save_user(user)
+    else:
+        if picture and user.get('picture') != picture:
+            user['picture'] = picture
+            save_user(user)
     return {'success': True, 'user': sanitize_user(user)}
 
 
@@ -794,8 +847,17 @@ def admin_read_file(phone: str = Query(...), path: str = Query(...)):
 @app.get('/api/admin/config')
 def admin_config(phone: str = Query(...)):
     require_super_admin(phone)
+    total_files = sum(len(files) for _, _, files in os.walk(DATA_DIR))
     return {
+        'success': True,
         'dataDir': DATA_DIR,
+        'environment': os.environ.get('ENVIRONMENT', 'local'),
+        'pythonVersion': sys.version,
+        'userCount': len(get_all_users()),
+        'communityCount': len(get_all_communities()),
+        'itemCount': len(get_all_items()),
+        'totalDataFiles': total_files,
+        'superAdmins': list(SUPER_ADMIN_PHONES),
         'config': {
             'DATA_DIR': os.environ.get('DATA_DIR', '../data'),
             'SUPER_ADMIN_PHONES': os.environ.get('SUPER_ADMIN_PHONES', ''),
@@ -803,6 +865,165 @@ def admin_config(phone: str = Query(...)):
             'BACKEND_DIR': _BACKEND_DIR,
         },
     }
+
+
+@app.get('/api/admin/data/download')
+def admin_data_download(phone: str = Query(...), path: str = Query(default='')):
+    require_super_admin(phone)
+    rel, abs_path = safe_admin_path(path)
+    if not os.path.exists(abs_path):
+        raise HTTPException(status_code=404, detail='Path not found')
+    if not os.path.isdir(abs_path):
+        fname = os.path.basename(abs_path)
+        return StreamingResponse(
+            open(abs_path, 'rb'),
+            media_type='application/octet-stream',
+            headers={'Content-Disposition': f'attachment; filename={fname}'},
+        )
+    folder_name = os.path.basename(abs_path) if path else 'neighborgoods-data'
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, _, files in os.walk(abs_path):
+            for fname in files:
+                full = os.path.join(root, fname)
+                arcname = os.path.relpath(full, os.path.dirname(abs_path))
+                zf.write(full, arcname)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type='application/zip',
+        headers={'Content-Disposition': f'attachment; filename={folder_name}.zip'},
+    )
+
+
+@app.get('/api/admin/maintenance/audit')
+def admin_audit(phone: str = Query(...)):
+    require_super_admin(phone)
+    issues = []
+    users = {u['id']: u for u in get_all_users()}
+    communities = {c['id']: c for c in get_all_communities()}
+    items = {i['id']: i for i in get_all_items()}
+    interests = get_all_interests()
+
+    for item in items.values():
+        if item.get('userId') not in users:
+            issues.append({
+                'type': 'orphaned_item',
+                'severity': 'warning',
+                'description': f"Item '{item.get('title')}' ({item['id']}) references unknown user {item.get('userId')}",
+                'fix': 'delete_orphaned_items',
+                'itemId': item['id'],
+            })
+        elif item.get('communityId') not in communities:
+            issues.append({
+                'type': 'orphaned_item',
+                'severity': 'error',
+                'description': f"Item '{item.get('title')}' ({item['id']}) references unknown community {item.get('communityId')}",
+                'fix': 'delete_orphaned_items',
+                'itemId': item['id'],
+            })
+
+    for interest in interests:
+        if interest.get('itemId') not in items:
+            issues.append({
+                'type': 'orphaned_interest',
+                'severity': 'warning',
+                'description': f"Interest {interest['id']} references unknown item {interest.get('itemId')}",
+                'fix': 'delete_orphaned_interests',
+                'interestId': interest['id'],
+            })
+        elif interest.get('userId') not in users:
+            issues.append({
+                'type': 'orphaned_interest',
+                'severity': 'warning',
+                'description': f"Interest {interest['id']} references unknown user {interest.get('userId')}",
+                'fix': 'delete_orphaned_interests',
+                'interestId': interest['id'],
+            })
+
+    for community in communities.values():
+        for member_id in community.get('memberIds', []):
+            if member_id not in users:
+                issues.append({
+                    'type': 'membership_mismatch',
+                    'severity': 'warning',
+                    'description': f"Community '{community.get('name')}' has unknown member {member_id}",
+                    'fix': 'sync_membership',
+                    'communityId': community['id'],
+                })
+
+    for user in users.values():
+        for cid in user.get('communityIds', []):
+            if cid not in communities:
+                issues.append({
+                    'type': 'membership_mismatch',
+                    'severity': 'warning',
+                    'description': f"User {user.get('firstName')} {user.get('lastName')} references unknown community {cid}",
+                    'fix': 'sync_membership',
+                    'userId': user['id'],
+                })
+
+    return {'success': True, 'issues': issues, 'total': len(issues)}
+
+
+@app.post('/api/admin/maintenance/sync-membership')
+def admin_sync_membership(data: dict = Body(...)):
+    require_super_admin(data.get('phone', ''))
+    all_users = get_all_users()
+    communities = {c['id']: c for c in get_all_communities()}
+    user_ids = {u['id'] for u in all_users}
+
+    fixed_communities = 0
+    fixed_users = 0
+
+    for community in communities.values():
+        original = list(community.get('memberIds', []))
+        community['memberIds'] = [uid for uid in original if uid in user_ids]
+        if community['memberIds'] != original:
+            save_community(community)
+            fixed_communities += 1
+
+    for user in all_users:
+        original = list(user.get('communityIds', []))
+        user['communityIds'] = [cid for cid in original if cid in communities]
+        if user['communityIds'] != original:
+            save_user(user)
+            fixed_users += 1
+
+    return {
+        'success': True,
+        'message': f'Synced: {fixed_communities} communities, {fixed_users} users updated',
+        'communitiesUpdated': fixed_communities,
+        'usersUpdated': fixed_users,
+    }
+
+
+@app.post('/api/admin/maintenance/fix-orphans')
+def admin_fix_orphans(data: dict = Body(...)):
+    require_super_admin(data.get('phone', ''))
+    fix_type = str(data.get('fixType', ''))
+    users = {u['id']: u for u in get_all_users()}
+    communities = {c['id']: c for c in get_all_communities()}
+    items = {i['id']: i for i in get_all_items()}
+    interests = get_all_interests()
+    deleted = 0
+
+    if fix_type == 'delete_orphaned_items':
+        for item in list(items.values()):
+            if item.get('userId') not in users or item.get('communityId') not in communities:
+                for interest in interests:
+                    if interest.get('itemId') == item['id']:
+                        delete_interest_file(interest['id'])
+                delete_item_file(item['id'])
+                deleted += 1
+
+    elif fix_type == 'delete_orphaned_interests':
+        for interest in interests:
+            if interest.get('itemId') not in items or interest.get('userId') not in users:
+                delete_interest_file(interest['id'])
+                deleted += 1
+
+    return {'success': True, 'deleted': deleted}
 
 
 @app.get('/api/health')

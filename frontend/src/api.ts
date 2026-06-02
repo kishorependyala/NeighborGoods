@@ -6,6 +6,8 @@ export interface User {
   firstName: string;
   lastName: string;
   email?: string;
+  picture?: string;
+  authMethod?: 'phone' | 'social';
   tokenBalance: number;
   communityIds: string[];
   isSuperAdmin?: boolean;
@@ -74,6 +76,30 @@ export interface AdminBrowseEntry {
   size: number;
   modified: string;
   path: string;
+}
+
+export interface AdminConfig {
+  dataDir: string;
+  environment: string;
+  pythonVersion: string;
+  userCount: number;
+  communityCount: number;
+  itemCount: number;
+  totalDataFiles: number;
+  superAdmins: string[];
+  config: Record<string, string | boolean>;
+}
+
+export interface DataIssue {
+  type: string;
+  severity: 'warning' | 'error';
+  description: string;
+  fix: string | null;
+  itemId?: string;
+  interestId?: string;
+  communityId?: string;
+  userId?: string;
+  [key: string]: unknown;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -175,6 +201,28 @@ export const adminReadFile = (phone: string, path: string) =>
   );
 
 export const adminGetConfig = (phone: string) =>
-  request<{ dataDir: string; config: Record<string, string | boolean> }>(
+  request<AdminConfig>(
     `/api/admin/config?phone=${encodeURIComponent(phone)}`
+  );
+
+export const socialAuth = (email: string, name: string, picture: string) =>
+  request<{ success: boolean; user?: User; message?: string }>('/api/auth/social',
+    json('POST', { email, name, picture }));
+
+export const adminDataDownloadUrl = (phone: string, path = '') =>
+  `${API_BASE}/api/admin/data/download?phone=${encodeURIComponent(phone)}&path=${encodeURIComponent(path)}`;
+
+export const adminAuditData = (phone: string) =>
+  request<{ success: boolean; issues: DataIssue[]; total: number; message?: string }>(
+    `/api/admin/maintenance/audit?phone=${encodeURIComponent(phone)}`
+  );
+
+export const adminSyncMembership = (phone: string) =>
+  request<{ success: boolean; message: string; communitiesUpdated: number; usersUpdated: number }>(
+    '/api/admin/maintenance/sync-membership', json('POST', { phone })
+  );
+
+export const adminFixOrphans = (phone: string, fixType: string) =>
+  request<{ success: boolean; deleted: number }>(
+    '/api/admin/maintenance/fix-orphans', json('POST', { phone, fixType })
   );

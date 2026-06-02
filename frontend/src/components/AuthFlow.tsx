@@ -1,8 +1,19 @@
+import { useAuth0 } from '@auth0/auth0-react';
 import { useMemo, useState } from 'react';
 import { authCheckPhone, loginWithPin, signup, User } from '../api';
 import { S, mutedText, sectionTitle } from '../theme';
 
 type Step = 'phone' | 'pin' | 'signup-name' | 'signup-email' | 'signup-pin';
+
+const SOCIAL_PROVIDERS = [
+  { connection: 'google-oauth2', label: 'Google',    icon: '🔵', bg: '#fff',    color: '#3c4043', border: '#dadce0' },
+  { connection: 'apple',         label: 'Apple',     icon: '🍎', bg: '#000',    color: '#fff',    border: '#000' },
+  { connection: 'facebook',      label: 'Facebook',  icon: '📘', bg: '#1877f2', color: '#fff',    border: '#1877f2' },
+  { connection: 'yahoo',         label: 'Yahoo',     icon: '🟣', bg: '#6001d2', color: '#fff',    border: '#6001d2' },
+  { connection: 'discord',       label: 'Discord',   icon: '💬', bg: '#5865f2', color: '#fff',    border: '#5865f2' },
+  { connection: 'twitter',       label: 'Twitter/X', icon: '🐦', bg: '#000',    color: '#fff',    border: '#333' },
+  { connection: 'microsoft',     label: 'Microsoft', icon: '🪟', bg: '#2f2f2f', color: '#fff',    border: '#2f2f2f' },
+];
 
 type Props = {
   onAuth: (user: User) => void;
@@ -11,6 +22,7 @@ type Props = {
 const IS_LOCAL = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 export default function AuthFlow({ onAuth }: Props) {
+  const { loginWithPopup } = useAuth0();
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
@@ -122,6 +134,19 @@ export default function AuthFlow({ onAuth }: Props) {
     }
   };
 
+  const handleSocial = async (connection: string) => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithPopup({ authorizationParams: { connection } });
+      // App.tsx useEffect handles backend sync after Auth0 authenticates
+    } catch (e: any) {
+      if (e?.error !== 'popup_closed_by_user') setError('Sign-in failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={S.authPage}>
       <div style={S.authCard}>
@@ -138,6 +163,35 @@ export default function AuthFlow({ onAuth }: Props) {
 
         {step === 'phone' && (
           <>
+            {/* Social login buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
+              {SOCIAL_PROVIDERS.map(({ connection, label, icon, bg, color, border }) => (
+                <button
+                  key={connection}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleSocial(connection)}
+                  title={label}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: '0.2rem', background: bg, color, border: `1.5px solid ${border}`,
+                    borderRadius: '0.75rem', padding: '0.5rem 0.25rem', fontSize: '0.7rem', fontWeight: 600,
+                    cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, minWidth: 0,
+                  }}
+                >
+                  <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icon}</span>
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', padding: '0 2px' }}>{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ flex: 1, height: 1, background: '#fde68a' }} />
+              <span style={{ color: '#92400e', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap' }}>or sign in with phone</span>
+              <div style={{ flex: 1, height: 1, background: '#fde68a' }} />
+            </div>
+
             <div style={S.fieldGroup}>
               <label style={S.label}>Phone number</label>
               <input
@@ -151,7 +205,7 @@ export default function AuthFlow({ onAuth }: Props) {
               />
             </div>
             <button onClick={handleCheckPhone} style={S.primaryBtn} disabled={loading}>
-              {loading ? 'Checking...' : 'Continue'}
+              {loading ? 'Checking...' : 'Continue →'}
             </button>
             {IS_LOCAL && (
               <button onClick={handleDemo} style={{ ...S.smallOutlineBtn, width: '100%', padding: '0.75rem 1rem' }} disabled={loading}>

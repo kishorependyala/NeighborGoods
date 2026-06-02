@@ -1,70 +1,50 @@
 import { useEffect, useState } from 'react';
 import {
-  adminBrowseData,
-  adminGetConfig,
   adminLoginAs,
-  adminReadFile,
   Community,
   deleteAdminCommunity,
   deleteAdminUser,
   getAllCommunities,
   getAllUsers,
   User,
-  AdminBrowseEntry,
 } from '../api';
 import { S, tab, mutedText, sectionTitle } from '../theme';
+import AppConfigView from './AppConfigView';
+import DataBrowser from './DataBrowser';
+import MaintenanceTab from './MaintenanceTab';
 
 type Props = {
   user: User;
   onImpersonate: (user: User) => void;
 };
 
-type SuperTab = 'communities' | 'users' | 'data' | 'config';
+type SuperTab = 'communities' | 'users' | 'data' | 'config' | 'maintenance';
 
 const SUPER_TABS: { id: SuperTab; label: string; emoji: string }[] = [
   { id: 'communities', label: 'Communities', emoji: '🏘️' },
   { id: 'users', label: 'Users', emoji: '👥' },
   { id: 'data', label: 'Data', emoji: '📁' },
   { id: 'config', label: 'Config', emoji: '⚙️' },
+  { id: 'maintenance', label: 'Maintenance', emoji: '🔧' },
 ];
 
 export default function SuperAdminPanel({ user, onImpersonate }: Props) {
   const [tabId, setTabId] = useState<SuperTab>('communities');
   const [communities, setCommunities] = useState<Community[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [entries, setEntries] = useState<AdminBrowseEntry[]>([]);
-  const [dataDir, setDataDir] = useState('');
-  const [path, setPath] = useState('');
-  const [fileContent, setFileContent] = useState('');
-  const [config, setConfig] = useState<Record<string, string | boolean>>({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const loadCommunities = async () => setCommunities(await getAllCommunities(user.phone));
   const loadUsers = async () => setUsers(await getAllUsers(user.phone));
 
-  const loadData = async (nextPath = '') => {
-    const res = await adminBrowseData(user.phone, nextPath);
-    setEntries(res.entries);
-    setPath(res.path);
-    setDataDir(res.dataDir);
-  };
-
-  const loadConfig = async () => {
-    const res = await adminGetConfig(user.phone);
-    setConfig(res.config);
-    setDataDir(res.dataDir);
-  };
-
   useEffect(() => {
+    if (tabId !== 'communities' && tabId !== 'users') return;
     const run = async () => {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       try {
         if (tabId === 'communities') await loadCommunities();
         if (tabId === 'users') await loadUsers();
-        if (tabId === 'data') await loadData(path);
-        if (tabId === 'config') await loadConfig();
       } catch (err: any) {
         setError(err.message || 'Unable to load admin data');
       } finally {
@@ -73,8 +53,6 @@ export default function SuperAdminPanel({ user, onImpersonate }: Props) {
     };
     run();
   }, [tabId, user.phone]);
-
-  const parentPath = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
@@ -90,30 +68,30 @@ export default function SuperAdminPanel({ user, onImpersonate }: Props) {
       </div>
 
       {error && <div style={S.errorBox}>{error}</div>}
-      {loading && <div style={S.card}>Loading admin tools...</div>}
+      {loading && <div style={S.card}>Loading…</div>}
 
       {!loading && tabId === 'communities' && (
         <div style={S.card}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr>
-                  <th align="left">Name</th>
-                  <th align="left">Members</th>
-                  <th align="left">Invite</th>
-                  <th align="left">Actions</th>
+                <tr style={{ background: '#fffbeb', borderBottom: '2px solid #fde68a' }}>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Name</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Members</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Invite</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {communities.map(community => (
                   <tr key={community.id} style={{ borderTop: '1px solid #fed7aa' }}>
-                    <td style={{ padding: '0.7rem 0' }}>{community.name}</td>
-                    <td>{community.memberIds.length}</td>
-                    <td>{community.inviteCode}</td>
-                    <td>
+                    <td style={{ padding: '0.7rem 0.6rem' }}>{community.name}</td>
+                    <td style={{ padding: '0.7rem 0.6rem' }}>{community.memberIds.length}</td>
+                    <td style={{ padding: '0.7rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>{community.inviteCode}</td>
+                    <td style={{ padding: '0.7rem 0.6rem' }}>
                       <button
                         onClick={async () => {
-                          if (!window.confirm(`Delete ${community.name}?`)) return;
+                          if (!window.confirm(`Delete "${community.name}"? This removes all its items.`)) return;
                           await deleteAdminCommunity(community.id, user.phone);
                           await loadCommunities();
                         }}
@@ -135,20 +113,26 @@ export default function SuperAdminPanel({ user, onImpersonate }: Props) {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr>
-                  <th align="left">Name</th>
-                  <th align="left">Phone</th>
-                  <th align="left">Tokens</th>
-                  <th align="left">Actions</th>
+                <tr style={{ background: '#fffbeb', borderBottom: '2px solid #fde68a' }}>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Name</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Phone / Email</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Tokens</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Auth</th>
+                  <th align="left" style={{ padding: '0.6rem', color: '#92400e' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(row => (
                   <tr key={row.id} style={{ borderTop: '1px solid #fed7aa' }}>
-                    <td style={{ padding: '0.7rem 0' }}>{row.firstName} {row.lastName}</td>
-                    <td>{row.phone}</td>
-                    <td>{row.tokenBalance}</td>
-                    <td style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', padding: '0.45rem 0' }}>
+                    <td style={{ padding: '0.7rem 0.6rem' }}>{row.firstName} {row.lastName}</td>
+                    <td style={{ padding: '0.7rem 0.6rem', fontFamily: 'monospace', fontSize: '0.82rem' }}>{row.phone}</td>
+                    <td style={{ padding: '0.7rem 0.6rem' }}>{row.tokenBalance} 🪙</td>
+                    <td style={{ padding: '0.7rem 0.6rem' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '99px', background: row.authMethod === 'social' ? '#dbeafe' : '#dcfce7', color: row.authMethod === 'social' ? '#1d4ed8' : '#166534', fontWeight: 600 }}>
+                        {row.authMethod || 'phone'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.7rem 0.6rem', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                       <button
                         onClick={async () => {
                           const res = await adminLoginAs(user.phone, row.phone);
@@ -177,68 +161,10 @@ export default function SuperAdminPanel({ user, onImpersonate }: Props) {
         </div>
       )}
 
-      {!loading && tabId === 'data' && (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <div style={S.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div>
-                <strong style={{ color: '#78350f' }}>DATA_DIR</strong>
-                <div style={mutedText}>{dataDir || '(loading...)'}</div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button onClick={() => loadData('')} style={S.smallOutlineBtn}>Root</button>
-                <button onClick={() => loadData(parentPath)} style={S.smallOutlineBtn} disabled={!path}>Up</button>
-              </div>
-            </div>
-            <div style={{ marginTop: '0.85rem', display: 'grid', gap: '0.6rem' }}>
-              {entries.map(entry => (
-                <button
-                  key={entry.path}
-                  onClick={async () => {
-                    if (entry.isDir) {
-                      await loadData(entry.path);
-                    } else {
-                      const res = await adminReadFile(user.phone, entry.path);
-                      setFileContent(res.content);
-                    }
-                  }}
-                  style={{
-                    textAlign: 'left',
-                    border: '1px solid #fed7aa',
-                    borderRadius: '0.75rem',
-                    padding: '0.75rem',
-                    background: '#fff',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <strong>{entry.isDir ? '📁' : '📄'} {entry.name}</strong>
-                  <div style={mutedText}>{entry.modified} • {entry.size} bytes</div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={S.card}>
-            <strong style={{ color: '#78350f' }}>File viewer</strong>
-            <pre style={{ whiteSpace: 'pre-wrap', overflowX: 'auto', marginTop: '0.85rem', fontSize: '0.82rem', color: '#444', background: '#fffbeb', padding: '0.85rem', borderRadius: '0.75rem' }}>
-              {fileContent || 'Select a JSON file to preview it here.'}
-            </pre>
-          </div>
-        </div>
-      )}
-
-      {!loading && tabId === 'config' && (
-        <div style={S.card}>
-          <div style={mutedText}>Non-secret configuration only.</div>
-          <div style={{ display: 'grid', gap: '0.65rem', marginTop: '0.85rem' }}>
-            {Object.entries(config).map(([key, value]) => (
-              <div key={key} style={{ border: '1px solid #fed7aa', borderRadius: '0.75rem', padding: '0.75rem' }}>
-                <strong style={{ color: '#78350f' }}>{key}</strong>
-                <div style={mutedText}>{String(value)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {tabId === 'data' && <DataBrowser phone={user.phone} />}
+      {tabId === 'config' && <AppConfigView phone={user.phone} />}
+      {tabId === 'maintenance' && <MaintenanceTab phone={user.phone} />}
     </div>
   );
 }
+

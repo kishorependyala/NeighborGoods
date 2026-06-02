@@ -21,6 +21,8 @@ jobs:
         working-directory: frontend
         env:
           REACT_APP_API_BASE_URL: https://neighborgoods-backend.azurewebsites.net
+          REACT_APP_AUTH0_DOMAIN: ${{ secrets.REACT_APP_AUTH0_DOMAIN }}
+          REACT_APP_AUTH0_CLIENT_ID: ${{ secrets.REACT_APP_AUTH0_CLIENT_ID }}
           CI: false
         run: |
           npm install --legacy-peer-deps

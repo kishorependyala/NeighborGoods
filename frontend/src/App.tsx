@@ -1,5 +1,6 @@
+import { useAuth0 } from '@auth0/auth0-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Community, User } from './api';
+import { Community, socialAuth, User } from './api';
 import AuthFlow from './components/AuthFlow';
 import AppHeader from './components/AppHeader';
 import CommunitiesTab from './components/CommunitiesTab';
@@ -36,6 +37,7 @@ function useCopyLink(timeout = 2000) {
 }
 
 export default function App() {
+  const { user: auth0User, isAuthenticated, logout: auth0Logout } = useAuth0();
   const [user, setUser] = useState<User | null>(null);
   const [tabId, setTabId] = useState<AppTab>('communities');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -76,6 +78,35 @@ export default function App() {
     }
   };
 
+  // Sync Auth0 social login → backend user record
+  useEffect(() => {
+    if (isAuthenticated && auth0User) {
+      const email = (auth0User.email || '').toLowerCase();
+      const name = auth0User.name || auth0User.nickname || email.split('@')[0] || 'User';
+      const picture = auth0User.picture || '';
+      if (!email) return;
+      socialAuth(email, name, picture).then((res) => {
+        if (res.success && res.user) {
+          const u: User = { ...res.user, email, picture, authMethod: 'social' };
+          const stored = localStorage.getItem(STORAGE_KEY);
+          const current = stored ? JSON.parse(stored) as User : null;
+          if (!current || current.authMethod === 'social' || current.id !== u.id) {
+            setSessionUser(u);
+          }
+        }
+      }).catch(() => {
+        // Fallback: use Auth0 data if backend unreachable
+        const parts = name.split(' ', 1);
+        const u: User = {
+          id: '', phone: email, firstName: parts[0], lastName: parts[1] || '',
+          email, picture, authMethod: 'social', tokenBalance: 0, communityIds: [],
+        };
+        setSessionUser(u);
+      });
+    }
+    // eslint-disable-next-line
+  }, [isAuthenticated, auth0User]);
+
   const availableTabs = useMemo(() => {
     if (!user) return [] as { id: AppTab; label: string; emoji: string }[];
     return [
@@ -101,6 +132,9 @@ export default function App() {
           setSelectedCommunity(null);
           setTabId('communities');
           setSessionUser(null);
+          if (isAuthenticated) {
+            auth0Logout({ logoutParams: { returnTo: window.location.origin } });
+          }
         }}
         onHome={() => {
           setSelectedCommunity(null);
