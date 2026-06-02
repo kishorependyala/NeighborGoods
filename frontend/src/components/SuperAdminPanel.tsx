@@ -57,7 +57,7 @@ export default function SuperAdminPanel({ user, onImpersonate }: Props) {
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
       <div style={S.card}>
-        <h2 style={sectionTitle}>Super Admin</h2>
+        <h2 style={sectionTitle}>Admin</h2>
         <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '2px solid #fed7aa', marginTop: '0.85rem', overflowX: 'auto' }}>
           {SUPER_TABS.map(tabItem => (
             <button key={tabItem.id} onClick={() => setTabId(tabItem.id)} style={tab(tabId === tabItem.id)}>

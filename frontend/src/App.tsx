@@ -112,7 +112,7 @@ export default function App() {
     return [
       { id: 'communities' as AppTab, label: 'Communities', emoji: '🏘️' },
       ...(user.communityIds?.length ? [{ id: 'trades' as AppTab, label: 'Trades', emoji: '🔄' }] : []),
-      ...(user.isSuperAdmin ? [{ id: 'admin' as AppTab, label: 'Super Admin', emoji: '🔑' }] : []),
+      ...(user.isSuperAdmin ? [{ id: 'admin' as AppTab, label: 'Admin', emoji: '🔑' }] : []),
     ];
   }, [user]);
 
