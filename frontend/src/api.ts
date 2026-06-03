@@ -205,6 +205,10 @@ export const adminGetConfig = (phone: string) =>
     `/api/admin/config?phone=${encodeURIComponent(phone)}`
   );
 
+export const updateProfile = (phone: string, firstName: string, lastName: string, email: string) =>
+  request<{ success: boolean; user?: User }>('/api/users/profile',
+    json('PATCH', { phone, firstName, lastName, email }));
+
 export const socialAuth = (email: string, name: string, picture: string) =>
   request<{ success: boolean; user?: User; message?: string }>('/api/auth/social',
     json('POST', { email, name, picture }));

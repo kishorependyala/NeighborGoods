@@ -736,6 +736,21 @@ async def search_books(q: str = Query(...)):
     return results
 
 
+@app.patch('/api/users/profile')
+def update_profile(data: dict = Body(...)):
+    user = require_user(data.get('phone', ''))
+    first = data.get('firstName', '').strip()
+    last = data.get('lastName', '').strip()
+    if not first or not last:
+        raise HTTPException(status_code=400, detail='First and last name are required')
+    user['firstName'] = first
+    user['lastName'] = last
+    email = (data.get('email') or '').strip()
+    user['email'] = email or user.get('email')
+    save_user(user)
+    return {'success': True, 'user': sanitize_user(user)}
+
+
 @app.get('/api/users/all')
 def list_all_users_admin(phone: str = Query(...)):
     require_super_admin(phone)

@@ -6,6 +6,7 @@ import AppHeader from './components/AppHeader';
 import CommunitiesTab from './components/CommunitiesTab';
 import TradesTab from './components/TradesTab';
 import SuperAdminPanel from './components/SuperAdminPanel';
+import ProfileModal from './components/ProfileModal';
 import { S, tab } from './theme';
 
 type AppTab = 'communities' | 'trades' | 'admin';
@@ -42,6 +43,7 @@ export default function App() {
   const [tabId, setTabId] = useState<AppTab>('communities');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [hashCommunityId, setHashCommunityId] = useState<string | null>(() => readHashCommunityId());
+  const [showProfile, setShowProfile] = useState(false);
   const { copied: appLinkCopied, copy } = useCopyLink();
 
   useEffect(() => {
@@ -142,7 +144,16 @@ export default function App() {
         }}
         onShareApp={handleShare}
         appLinkCopied={appLinkCopied}
+        onProfileClick={() => setShowProfile(true)}
       />
+
+      {showProfile && (
+        <ProfileModal
+          user={user}
+          onClose={() => setShowProfile(false)}
+          onSave={updated => { setSessionUser(updated); setShowProfile(false); }}
+        />
+      )}
 
       <div
         style={{

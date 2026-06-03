@@ -7,9 +7,10 @@ type Props = {
   onHome: () => void;
   onShareApp: () => void;
   appLinkCopied: boolean;
+  onProfileClick: () => void;
 };
 
-export default function AppHeader({ user, onLogout, onHome, onShareApp, appLinkCopied }: Props) {
+export default function AppHeader({ user, onLogout, onHome, onShareApp, appLinkCopied, onProfileClick }: Props) {
   const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'NG';
 
   return (
@@ -39,23 +40,29 @@ export default function AppHeader({ user, onLogout, onHome, onShareApp, appLinkC
         <button onClick={onShareApp} style={{ ...S.smallOutlineBtn, fontSize: '0.78rem' }}>
           {appLinkCopied ? '✓ Copied!' : '🔗 Share'}
         </button>
-        <div
-          title={`${user.firstName} ${user.lastName}`}
+        <button
+          onClick={onProfileClick}
+          title={`${user.firstName} ${user.lastName} — view profile`}
           style={{
             width: 34,
             height: 34,
             borderRadius: '50%',
-            background: '#fef3c7',
+            background: user.picture ? 'transparent' : '#fef3c7',
             border: '2px solid #fde68a',
             display: 'grid',
             placeItems: 'center',
             fontWeight: 700,
             color: '#92400e',
             fontSize: '0.8rem',
+            cursor: 'pointer',
+            padding: 0,
+            overflow: 'hidden',
           }}
         >
-          {initials}
-        </div>
+          {user.picture
+            ? <img src={user.picture} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : initials}
+        </button>
         <button onClick={onLogout} style={{ ...S.smallOutlineBtn, fontSize: '0.75rem' }}>
           Logout
         </button>
