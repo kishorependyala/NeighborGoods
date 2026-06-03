@@ -146,6 +146,7 @@ export default function ItemsTab({ community, user }: Props) {
       description: book.description || prev.description,
       imageUrl: book.imageUrl || '',
       googleBookId: book.id,
+      tokenValue: String(book.suggestedTokens ?? 10),
     }));
     setBookModalOpen(false);
   };
@@ -307,6 +308,9 @@ export default function ItemsTab({ community, user }: Props) {
                       <strong style={{ color: '#78350f' }}>{book.title}</strong>
                       <span style={mutedText}>{book.authors?.join(', ') || 'Unknown author'}</span>
                       {book.description && <span style={{ ...mutedText, lineHeight: 1.4 }}>{book.description.slice(0, 140)}{book.description.length > 140 ? '…' : ''}</span>}
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#92400e' }}>
+                        🪙 {book.suggestedTokens ?? 10} tokens suggested
+                      </span>
                     </div>
                   </button>
                 ))}

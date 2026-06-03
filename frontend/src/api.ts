@@ -68,6 +68,7 @@ export interface BookResult {
   authors: string[];
   imageUrl?: string;
   description?: string;
+  suggestedTokens?: number;
 }
 
 export interface AdminBrowseEntry {

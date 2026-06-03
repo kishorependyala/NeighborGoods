@@ -726,12 +726,16 @@ async def search_books(q: str = Query(...)):
     for item in payload.get('items', []):
         info = item.get('volumeInfo', {})
         image_links = info.get('imageLinks', {})
+        sale_info = item.get('saleInfo', {})
+        retail_price = sale_info.get('retailPrice', {}).get('amount')
+        suggested_tokens = round(retail_price) if retail_price else 10
         results.append({
             'id': item.get('id'),
             'title': info.get('title', 'Untitled'),
             'authors': info.get('authors', []),
             'imageUrl': image_links.get('thumbnail') or image_links.get('smallThumbnail'),
             'description': info.get('description', ''),
+            'suggestedTokens': suggested_tokens,
         })
     return results
 
